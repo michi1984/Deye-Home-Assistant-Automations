@@ -1,0 +1,76 @@
+ - sensor:
+      - name: "Residual PWR"
+        unit_of_measurement: "W"
+        state: >
+          {% set PV = states('sensor.remote_inverter_active_power') | float(0) %}
+          {% set Grid = states('sensor.remote_power_meter_active_power') | float(0) %}
+          {% set Batt = states('sensor.sun12k_battery_output_power') | float(0) %}
+          {{ ((PV)-(Grid)-((-Batt))) | float(0) }} 
+  - sensor:
+      - name: "Deye Charge PWR"
+        unit_of_measurement: "W"
+        state: >
+          {% set PV = states('sensor.remote_inverter_active_power') | float(0) %}
+          {% set Residual = states('sensor.residual_pwr') | float(0) %}
+          {{ ((PV)-(Residual)) | float(0) }} 
+  - sensor:
+      - name: "Deye Charge AMP"
+        unit_of_measurement: "A"
+        state: >
+          {% set Volt = states('sensor.sun12k_bms_pack_voltage') | float(0) %}
+          {% set PWR = states('sensor.deye_charge_pwr') | float(0) %}
+          {{ (((PWR))/(Volt)) | float(0) }}
+  - sensor:
+      - name: "Deye Charge AMP Temp Corr"
+        unit_of_measurement: "A"
+        state: >
+          {% if is_state('binary_sensor.cell_temp_15', 'on') %}
+           {{ min((states('sensor.deye_charge_amp') | round(0), 50)) }}
+          {% else %}
+            {{ min((states('sensor.deye_charge_amp') | round(0), 140)) }}
+          {% endif %}
+  - sensor:
+      - name: "Deye Charge AMP Filtered"
+        unit_of_measurement: "A"
+        state: >
+
+- binary_sensor:
+      - name: "SOC_Target"
+        state: "{{states('sensor.seplos_bms_state_of_charge')|float(0) >= 98.5 }}"
+  - binary_sensor:
+      - name: "Tail_Current_Target"
+        state: "{{states('sensor.seplos_bms_current')|float(0) <= 3.92 }}"
+  - binary_sensor:
+      - name: "Cell Temp < 15"
+        state: "{{states('sensor.seplos_bms_min_cell_temperature') | float <= 15 }}"
+  - binary_sensor:
+      - name: "Cell Temp < 10"
+        state: "{{states('sensor.seplos_bms_min_cell_temperature') | float <= 10 }}"
+  - binary_sensor:
+      - name: "Cell Temp < 5"
+        state: "{{states('sensor.seplos_bms_min_cell_temperature') | float <= 5 }}"
+  - binary_sensor:
+      - name: "Cell Temp > 35"
+        state: "{{states('sensor.seplos_bms_max_cell_temperature') | float >= 35 }}"
+  - binary_sensor:
+      - name: "Cell Temp > 40"
+        state: "{{states('sensor.seplos_bms_max_cell_temperature') | float >= 40 }}"
+  - binary_sensor:
+      - name: "Cell Temp > 45"
+        state: "{{states('sensor.seplos_bms_max_cell_temperature') | float >= 45 }}"
+  - binary_sensor:
+      - name: "SOC_low_10"
+        state: "{{states('sensor.seplos_bms_state_of_charge')|float(0) <= 10 }}"
+  - binary_sensor:
+      - name: "SOC_low_5"
+        state: "{{states('sensor.seplos_bms_state_of_charge')|float(0) <= 5 }}"
+  - binary_sensor:
+      - name: "PV PWR low"
+        state: "{{states('sensor.remote_inverter_active_power')|float(0) <= 600 }}"
+  - binary_sensor:
+      - name: "PV Feedin low"
+        state: "{{states('sensor.remote_power_meter_active_power')|float(0) <= 150 }}"
+  - binary_sensor:
+      - name: "PV Feedin OK"
+        state: "{{states('sensor.remote_power_meter_active_power')|float(0) >= 500 }}"
+           {{ [ states('sensor.deye_charge_amp_temp_corr')|round(0), 0 ] | max }}
