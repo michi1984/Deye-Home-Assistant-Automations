@@ -1,0 +1,42 @@
+alias: Tail Current Cutoff
+description: ""
+triggers:
+  - trigger: time_pattern
+    seconds: /5
+conditions:
+  - condition: sun
+    before: sunset
+    after: sunrise
+    after_offset: "2:00:00"
+  - condition: state
+    entity_id: binary_sensor.soc_target
+    state: "on"
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+  - condition: state
+    entity_id: binary_sensor.tail_current_target
+    state: "on"
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+actions:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: select.sun12k_grid_port_setting
+            state: Microinverter
+        sequence:
+          - action: switch.turn_off
+            metadata: {}
+            data: {}
+            target:
+              entity_id: switch.mitpylon_set_charging_allowed
+      - conditions:
+          - condition: state
+            entity_id: select.sun12k_grid_port_setting
+            state: Gen use
+        sequence: []
+mode: single
