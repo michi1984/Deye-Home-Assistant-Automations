@@ -1,0 +1,72 @@
+alias: Deye Charge Current Control CAN
+description: Deye Ladestrom Überschussregelung
+triggers:
+  - seconds: /15
+    trigger: time_pattern
+conditions:
+  - condition: sun
+    before: sunset
+    before_offset: "00:45:00"
+    after: sunrise
+    after_offset: "00:20:00"
+    enabled: true
+  - condition: state
+    entity_id: select.sun12k_grid_port_setting
+    state: Microinverter
+  - condition: numeric_state
+    entity_id: sensor.deye_charge_amp_temp_corr
+    above: 5
+  - condition: numeric_state
+    entity_id: input_number.deye_charge_current_limit
+    above: 2
+actions:
+  - choose:
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: template
+                value_template: >-
+                  {{states("number.mitpylon_set_charge_current_limit") | float
+                  != states("input_number.deye_charge_current_limit") | float}}
+              - condition: numeric_state
+                entity_id: sensor.deye_charge_amp_temp_corr
+                above: input_number.deye_charge_current_limit
+        sequence:
+          - action: number.set_value
+            metadata: {}
+            data:
+              value: "{{states('input_number.deye_charge_current_limit')}}"
+            target:
+              entity_id:
+                - number.mitpylon_set_charge_current_limit
+          - action: counter.increment
+            metadata: {}
+            data: {}
+            target:
+              entity_id: counter.charge_current_set
+            enabled: false
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: numeric_state
+                entity_id: sensor.deye_charge_amp_temp_corr
+                below: input_number.deye_charge_current_limit
+              - condition: template
+                value_template: >-
+                  {{states("number.mitpylon_set_charge_current_limit") | float
+                  != states("sensor.deye_charge_amp_temp_corr") | float}}
+        sequence:
+          - action: number.set_value
+            metadata: {}
+            data:
+              value: "{{states('sensor.deye_charge_amp_temp_corr')}}"
+            target:
+              entity_id:
+                - number.mitpylon_set_charge_current_limit
+          - action: counter.increment
+            metadata: {}
+            data: {}
+            target:
+              entity_id: counter.charge_current_set
+            enabled: false
+mode: single
